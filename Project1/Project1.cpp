@@ -13,6 +13,7 @@
 #include <string>
 #include <commctrl.h>
 #include <vector>
+#include <set>
 
 //#include<initguid.h>///As with any COM interface, the system file initguid.h should be included in any source code that requires Active Accessibility.
 #pragma comment(lib, "user32.lib")
@@ -148,9 +149,14 @@ UINT GetObjectDescription(IAccessible* pacc, VARIANT* pvarChild, LPTSTR lpszBuff
 
 void ReleaseAccessibles(std::vector<std::pair<IAccessible*, VARIANT>>& children)
 {
+    std::set<IAccessible*> hasReleased;
 	for (size_t i = 0; i < children.size(); i++)
 	{
-		children[i].first->Release();
+        if (hasReleased.find(children[i].first) == hasReleased.end())
+        {
+			children[i].first->Release();
+			hasReleased.insert(children[i].first);
+        }
 	}
 	children.clear();
 }
@@ -327,6 +333,7 @@ int main()
     hWnd = ::FindWindowEx(hWnd, NULL, "OWL.ApplicationBar", NULL);
     hWnd = ::FindWindowEx(hWnd, NULL, "OWL.MenuBar", NULL);*/
 
+    //HWND hWnd = FindWindow(_T("#32770"), _T("Export File"));
     HWND hWnd = FindWindow(_T("WeChatMainWndForPC"), _T("微信"));
     if (!::IsWindow(hWnd))
         return FALSE;
