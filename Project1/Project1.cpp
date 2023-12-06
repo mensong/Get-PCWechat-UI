@@ -14,6 +14,7 @@
 #include <commctrl.h>
 #include <vector>
 #include <set>
+#include <atlcomcli.h>
 
 //#include<initguid.h>///As with any COM interface, the system file initguid.h should be included in any source code that requires Active Accessibility.
 #pragma comment(lib, "user32.lib")
@@ -87,6 +88,8 @@ UINT GetObjectValue(IAccessible* pacc, VARIANT* pvarChild, TCHAR* lpszBuff, UINT
         pszValue
 #endif
     );
+
+    //pacc->put_accValue(*pvarChild, CComBSTR("mensong"));
 
     return _tcslen(lpszBuff);
 }
@@ -173,14 +176,17 @@ void PrintInfo(IAccessible* pAcc, VARIANT& child)
 
 	// Skip invisible and unavailable objects and their children
 	GetObjectState(pAcc, &child, szObjState, MAX_BUFF_LEN);
-	GetObjectName(pAcc, &child, szObjName, MAX_BUFF_LEN);
-	GetObjectValue(pAcc, &child, szObjValue, MAX_BUFF_LEN);
-	GetObjectRole(pAcc, &child, szObjRole, MAX_BUFF_LEN);
-	//GetObjectRole(pAcc, &child, szObjDesc, MAX_BUFF_LEN);
-	GetObjectClass(pAcc, szObjClass, MAX_BUFF_LEN);
+    if (_tcscmp(szObjState, _T("不可见")) != 0)
+    {
+		GetObjectName(pAcc, &child, szObjName, MAX_BUFF_LEN);
+		GetObjectValue(pAcc, &child, szObjValue, MAX_BUFF_LEN);
+		GetObjectRole(pAcc, &child, szObjRole, MAX_BUFF_LEN);
+		//GetObjectRole(pAcc, &child, szObjDesc, MAX_BUFF_LEN);
+		GetObjectClass(pAcc, szObjClass, MAX_BUFF_LEN);
 
-	_tprintf(_T("szObjName=%s, szObjValue=%s, szObjState=%s, szObjClass=%s, szObjRole=%s\n"),
-		szObjName, szObjValue, szObjState, szObjClass, szObjRole);
+		_tprintf(_T("szObjName=%s, szObjValue=%s, szObjState=%s, szObjClass=%s, szObjRole=%s\n"),
+			szObjName, szObjValue, szObjState, szObjClass, szObjRole);
+    }
 
 	delete[] szObjValue;
 	delete[] szObjName;
@@ -211,10 +217,10 @@ void GetAccessibleChildren(
 
     // Get child count
     pAccParent->get_accChildCount(&numChildren);
-
 	for (indexCount = 1; indexCount <= numChildren; indexCount++)
     {
 		pAcc = NULL;
+        numFetched = 0;
 
         // Get next child
         if (pEnum)
@@ -333,7 +339,8 @@ int main()
     hWnd = ::FindWindowEx(hWnd, NULL, "OWL.ApplicationBar", NULL);
     hWnd = ::FindWindowEx(hWnd, NULL, "OWL.MenuBar", NULL);*/
 
-    //HWND hWnd = FindWindow(_T("#32770"), _T("Export File"));
+	//HWND hWnd = FindWindow(_T("ThunderRT6FormDC"), _T("Paste++"));
+	//HWND hWnd = FindWindow(_T("#32770"), _T("Export File"));
     HWND hWnd = FindWindow(_T("WeChatMainWndForPC"), _T("微信"));
     if (!::IsWindow(hWnd))
         return FALSE;
@@ -342,10 +349,6 @@ int main()
     HRESULT hr = AccessibleObjectFromWindow(hWnd, OBJID_WINDOW, IID_IAccessible, (void**)&pIAcc);
     if (SUCCEEDED(hr) && pIAcc)
     {
-        VARIANT varChild;
-        VariantInit(&varChild);
-        IAccessible* pIAccChild = NULL;
-        char g_sSubPrefix[MAX_PATH] = "";
         //if (FindAccessible(pIAcc, "本地连接", "列表项目","DirectUIHWND", &pIAccChild, &varChild))
         std::vector<std::pair<IAccessible*, VARIANT>> children;
         GetAccessibleChildren(pIAcc, children, false);
@@ -356,8 +359,20 @@ int main()
 
 		for (size_t i = 0; i < children.size(); i++)
 		{
-			PrintInfo(children[i].first, children[i].second);            
-		}
+            PrintInfo(children[i].first, children[i].second);
+        }
+
+		//IAccessible* pAccChild = children[children.size() - 11].first;
+		//VARIANT varChild = children[children.size() - 11].second;
+
+		////VariantInit(&varChild);
+		////varChild.vt = VT_I4;
+		////varChild.lVal = CHILDID_SELF;
+
+		//pAccChild->accSelect(
+		//	SELFLAG_TAKESELECTION | SELFLAG_TAKEFOCUS,
+		//	varChild);
+		//pAccChild->accDoDefaultAction(varChild);
 
 		ReleaseAccessibles(children);
     }
